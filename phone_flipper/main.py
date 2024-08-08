@@ -104,14 +104,13 @@ def execute_action(
         if check_connectivity(ip):
             try:
                 if phone_type.lower() == "polycom":
-                    module = importlib.import_module("phone_tool.poly")
+                    module = importlib.import_module("phone_flipper.poly")
                 elif phone_type.lower() == "yealink":
-                    module = importlib.import_module("phone_tool.yealink")
+                    module = importlib.import_module("phone_flipper.yealink")
                 elif phone_type.lower() == "cisco":
-                    module = importlib.import_module("phone_tool.cisco")
+                    module = importlib.import_module("phone_flipper.cisco")
                 else:
-                    print(f"Unsupported phone type: {phone_type}")
-                    return
+                    raise ImportError(f"Unsupported model: {phone_type}")
 
                 if action == "factory_reset":
                     module.factory_reset(ip, username, password, log_file)
