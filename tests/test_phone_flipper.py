@@ -1,11 +1,12 @@
 import pytest
 import csv
 import configparser
-from phone_flipper import (
+from phone_flipper.main import (
     read_ip_addresses_from_csv,
     read_credentials,
     get_provisioning_url,
     check_connectivity,
+    execute_action,
 )
 
 # Sample CSV and credentials data
@@ -97,3 +98,68 @@ def test_check_connectivity(monkeypatch):
 
     # Check connectivity
     assert check_connectivity("192.168.1.10") == False
+
+
+def test_execute_action_factory_reset(monkeypatch):
+    # Mock the functions used within execute_action
+    def mock_check_connectivity(ip):
+        return True
+
+    def mock_factory_reset(ip, username, password, log_file):
+        print(f"Factory reset for {ip} with user {username}")
+
+    monkeypatch.setattr("phone_flipper.check_connectivity", mock_check_connectivity)
+    monkeypatch.setattr("phone_flipper.poly.factory_reset", mock_factory_reset)
+
+    # Execute the action
+    execute_action(
+        "factory_reset",
+        "Polycom",
+        "192.168.1.10",
+        "admin",
+        "password",
+        "provisioning_url",
+        "log_file",
+    )
+    # Here you would add asserts based on expected outcomes
+
+
+def test_execute_action_provision(monkeypatch):
+    # Mock the functions used within execute_action
+    def mock_check_connectivity(ip):
+        return True
+
+    def mock_provision(ip, username, password, provisioning_server_address, log_file):
+        print(
+            f"Provision for {ip} with user {username} and URL {provisioning_server_address}"
+        )
+
+    monkeypatch.setattr("phone_flipper.check_connectivity", mock_check_connectivity)
+    monkeypatch.setattr("phone_flipper.poly.provision", mock_provision)
+
+    # Execute the action
+    execute_action(
+        "provision",
+        "Polycom",
+        "192.168.1.10",
+        "admin",
+        "password",
+        "provisioning_url",
+        "log_file",
+    )
+
+
+# TODO: Fix this unsupported model test
+
+# def test_execute_action_unsupported_model():
+#     # Attempt to execute an action with an unsupported model
+#     with pytest.raises(ImportError, match=r"Unsupported model: SomeOtherModel"):
+#         execute_action(
+#             "factory_reset",
+#             "SomeOtherModel",
+#             "192.168.1.10",
+#             "admin",
+#             "password",
+#             "provisioning_url",
+#             "log_file",
+#         )
