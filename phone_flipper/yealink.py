@@ -8,9 +8,10 @@ def yealink_factory_reset(ip_address, current_username, current_password, log_fi
         level=logging.ERROR,
         format="%(asctime)s:%(levelname)s:%(message)s",
     )
-    browser = sync_playwright().start().chromium.launch(headless=False)
-    context = browser.new_context(ignore_https_errors=True)
-    page = context.new_page()
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=False)
+        context = browser.new_context(ignore_https_errors=True)
+        page = context.new_page()
 
     try:
         page.goto(f"https://{ip_address}/")

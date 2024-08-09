@@ -4,7 +4,24 @@ import configparser
 import importlib
 import subprocess
 import argparse
+import sys
+import os
 from playwright.sync_api import sync_playwright
+from playwright.__main__ import main as playwright_main
+
+
+def ensure_playwright_browsers_installed():
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            browser.close()
+    except Exception as e:
+        print(
+            "Playwright browsers are not installed. Please run the following command to install them:"
+        )
+        print("    playwright install")
+        sys.exit(1)
+
 
 # Path to your CSV file and credentials file
 csv_file_path = "phones.csv"
@@ -100,11 +117,11 @@ def check_connectivity(ip_address):
 def execute_action(
     action, phone_type, ip, username, password, provisioning_server_address, log_file
 ):
-    with sync_playwright() as playwright:
+    with sync_playwright() as p:
         if check_connectivity(ip):
             try:
                 if phone_type.lower() == "polycom":
-                    module = importlib.import_module("phone_flipper.poly")
+                    module = importlib.import_module("phone_flipper.polycom")
                 elif phone_type.lower() == "yealink":
                     module = importlib.import_module("phone_flipper.yealink")
                 elif phone_type.lower() == "cisco":
@@ -113,10 +130,10 @@ def execute_action(
                     raise ImportError(f"Unsupported model: {phone_type}")
 
                 if action == "factory_reset":
-                    module.factory_reset(ip, username, password, log_file)
+                    module.factory_reset(ip, password, log_file)
                 elif action == "provision":
                     module.provision(
-                        ip, username, password, provisioning_server_address, log_file
+                        ip, password, provisioning_server_address, log_file
                     )
                 else:
                     print(f"Unsupported action: {action}")
@@ -139,7 +156,6 @@ def execute_action(
             print(f"Cannot reach IP address {ip}, skipping...")
 
 
-# Main function
 def main():
     parser = argparse.ArgumentParser(description="Phone management tool")
     parser.add_argument(
@@ -157,6 +173,8 @@ def main():
 
     args = parser.parse_args()
 
+    ensure_playwright_browsers_installed()
+
     ip_addresses = read_ip_addresses_from_csv(args.csv)
     credentials = read_credentials(creds_file_path)
 
@@ -166,15 +184,26 @@ def main():
             destination, phone_model, phone_type
         )
 
-        execute_action(
-            args.action,
-            phone_type,
-            ip,
-            credentials["DEFAULT"][f"{phone_type.lower()}_username"],
-            credentials["DEFAULT"][f"{phone_type.lower()}_password"],
-            provisioning_server_address,
-            log_file,
-        )
+        if phone_type.lower() == "polycom":
+            execute_action(
+                args.action,
+                phone_type,
+                ip,
+                None,  # No username for Polycom
+                credentials["DEFAULT"].get(f"{phone_type.lower()}_current_password"),
+                provisioning_server_address,
+                log_file,
+            )
+        else:
+            execute_action(
+                args.action,
+                phone_type,
+                ip,
+                credentials["DEFAULT"].get(f"{phone_type.lower()}_username"),
+                credentials["DEFAULT"].get(f"{phone_type.lower()}_current_password"),
+                provisioning_server_address,
+                log_file,
+            )
 
 
 if __name__ == "__main__":
