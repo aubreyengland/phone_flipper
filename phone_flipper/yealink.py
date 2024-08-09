@@ -20,7 +20,7 @@ def yealink_factory_reset(ip_address, current_username, current_password, log_fi
         page.click('input[type="submit"]')
         page.click("text=Settings")
         page.click("text=Upgrade")
-        page.click("text=Reset to Factory")
+        page.click("text=Reset to Factory Settings")
         page.click("text=OK")
 
         print(f"Factory reset initiated for Yealink phone at {ip_address}")
